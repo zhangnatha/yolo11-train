@@ -1,0 +1,8 @@
+has_visible: true
+classes:
+  rack:
+    - k1
+    - k2
+  block:
+    - p1
+    - p2
