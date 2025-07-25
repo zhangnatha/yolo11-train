@@ -207,6 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 *pt
-./data_sets/Origin_dataset/*
-./data_sets/Origin_dataset/*
+data_sets/Origin_dataset/*
+data_sets/Train_dataset/*
+.idea
 runs
