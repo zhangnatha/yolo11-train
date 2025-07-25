@@ -1,11 +1,12 @@
-# train_utils.py
+# train_utils_v8v11.py
+
 from ultralytics import YOLO, settings
 import os
 import torch
 
 
 class YOLOTrainer:
-    """YOLO多任务训练器"""
+    """YOLOv8/YOLOv11 多任务训练器"""
 
     def __init__(self, model_type='yolo11n', task='detect', yolo_version='yolo11'):
         # 动态选择模型文件

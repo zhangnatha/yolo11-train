@@ -12,7 +12,7 @@ class DataPreparer:
         self.dataset_dir = Path(dataset_dir)
         self.output_dir = Path(output_dir)
         self.tasks = tasks
-        self.class_names = class_names or ['hole']
+        self.class_names = class_names
         self.image_extensions = ('.png', '.jpg', '.jpeg', '.bmp')
 
     def validate_label(self, label_path, task, kpt_count=0):
