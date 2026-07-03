@@ -13,20 +13,24 @@ def main():
     output_dir = os.path.join(current_dir, "data_sets", "Train_dataset")
 
     # 训练配置
-    class_names = ['leg', 'breast', 'cord', 'milkcup']  # 固定相机类别
+    class_names = ['stick', 'hole', 'small', 'circle']  # 固定相机类别
     tasks = ['segment']                                 # 支持: detect, segment, classify, pose, obb
-    yolo_versions = ['yolo11']                         # 支持: yolov8, yolo11, yolo26
+    yolo_versions = ['yolo11']                          # 支持: yolov8, yolo11, yolo26
     model_sizes = ['s']                                 # 支持: n, s, m, l, x
 
-    # ================= 迭代训练 / 断点续训配置 =================
-    # 填入你上一次训练完毕的具体的 .pt 文件物理路径
-    # 如果不需要，将其设为 None 即可（系统会自动去云端下载官方白板模型）
-    iteration_path = "/home/zja/github/yolo11-train/runs/segment/train17/weights/last.pt"
-    
-    # 模式选择开关：
-    # True  -> 用于意外中断后的“断点续训”（继承旧的 Epoch 计数、继承原有学习率进度，继续跑完剩下的轮数）
-    # False -> 用于在新基础上的“迭代训练 / 微调”（重置 Epoch 为 0，重置优化器状态，重新跑满全新生命周期）
-    is_resume = False  
+    # ================= 训练模式配置 =================
+    # True  -> 基于给定的 pt 模型继续训练 / 迭代
+    # False -> 彻底从零开始训练（不加载任何本地 pt 权重）
+    is_resume = False
+
+    # 根据你的开关，动态决定权重路径
+    if is_resume:
+        # 请在此处自行替换为你实际的 .pt 模型绝对路径
+        iteration_path = "/path/to/your/custom_model.pt"
+        print(f"模式已选择：基于给定模型 [{iteration_path}] 进行训练。")
+    else:
+        iteration_path = None
+        print("模式已选择：彻底从零开始训练。")
     # =========================================================
 
     # 数据集拆分校验与 YAML 生成
@@ -54,8 +58,8 @@ def main():
                 trainer = YOLOTrainer(
                     model_type=model_type, 
                     task=task, 
-                    yolo_version=yolo_version, 
-                    iteration_path=iteration_path
+                    yolo_version=yolo_version,
+                    iteration_path=iteration_path  # 当 is_resume=False 时传入 None，底层走官方标准初始化
                 )
                 
                 data_yaml = f"{output_dir}/data_{task}.yaml" if task != 'classify' else f"{output_dir}/train"
@@ -71,7 +75,8 @@ def main():
                     lr0=0.002,           # 初始学习率 (全新迭代/微调时，通常建议调小该值，如 0.001~0.004)
                     copy_paste=0.2,      # Copy-Paste 数据增强概率 (分割任务专用，跨图像拷贝粘帖目标)
                     patience=100,        # 早停(Early Stopping)耐心轮数 (若连续 100 轮指标不提升则提前结束训练)
-                    resume=is_resume,    # 是否启动恢复模式 (True 为断点接续训练，False 为作为预训练权重开启新一轮迭代)
+                    resume=False,        # 固定为 False，防范 Ultralytics 断点误判
+                    multi_scale=False,   # 强制规避旧权重带来的 0.0 浮点数类型报错
                 )
 
                 # 验证与导出
