@@ -12,8 +12,26 @@ class DataPreparer:
         self.dataset_dir = Path(dataset_dir)
         self.output_dir = Path(output_dir)
         self.tasks = tasks
-        self.class_names = class_names
+        self.class_names = class_names or self._load_classes()
         self.image_extensions = ('.png', '.jpg', '.jpeg', '.bmp')
+
+    def _load_classes(self):
+        candidates = [
+            self.dataset_dir / "classes.txt",
+            self.dataset_dir / "classes.names",
+            Path(__file__).resolve().parent.parent / "classes.txt",
+            Path(__file__).resolve().parent.parent / "classes.names",
+        ]
+        for cand in candidates:
+            if cand.exists():
+                try:
+                    with open(cand, "r", encoding="utf-8") as f:
+                        lines = [line.strip() for line in f if line.strip()]
+                        if lines:
+                            return lines
+                except Exception:
+                    pass
+        return ['leg', 'milkcup', 'nipple', 'tail']
 
     def validate_label(self, label_path, task, kpt_count=0):
         """验证标签文件格式是否符合任务要求"""
@@ -128,13 +146,17 @@ class DataPreparer:
 
     def generate_yaml(self):
         """生成官方格式的 data.yaml 配置文件"""
+        if not self.class_names:
+            self.class_names = self._load_classes()
+
         for task in self.tasks:
             if task == 'classify':
                 continue  # 分类任务无需单独定义 YAML
 
             dataset_name = self.output_dir.name
+            dataset_root = str(self.output_dir.resolve())
             data = {
-                'path': f'./data_sets/{dataset_name}',
+                'path': '.',
                 'train': 'train',
                 'val': 'val',
                 'test': 'test',
@@ -164,12 +186,10 @@ class DataPreparer:
                     with open(txt_path, 'r') as f:
                         class_names = [line.strip() for line in f if line.strip()]
                     data['names'] = {i: name for i, name in enumerate(class_names)}
-                else:
-                    print(f"Warning: {task_class_file} not found in {self.dataset_dir}, using default names")
 
             # 写入标准的 YAML 文本格式
             yaml_content = "# Train/val/test sets\n"
-            yaml_content += f"path: ./data_sets/{dataset_name}\n"
+            yaml_content += "path: .\n"
             yaml_content += "train: train\n"
             yaml_content += "val: val\n"
             yaml_content += "test: test\n\n"

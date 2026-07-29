@@ -207,7 +207,19 @@ marimo/_lsp/
 __marimo__/
 
 *pt
-data_sets/Origin_dataset/*
-data_sets/Train_dataset/*
+data_sets
 .idea
 runs
+
+gui/__init__.py
+gui/widgets/__init__.py
+gui_config.json
+services/__init__.py
+yolo26n.pt
+pre_trained_model
+results
+models
+
+model
+compare
+gui/widgets/labeling/__init__.py
