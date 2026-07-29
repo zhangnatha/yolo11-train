@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C?style=flat-square&logo=pytorch&logoColor=white" alt="PyTorch 2.0+">
   <img src="https://img.shields.io/badge/PyQt-5%20%2F%206-41CD52?style=flat-square&logo=qt&logoColor=white" alt="PyQt 5/6">
   <img src="https://img.shields.io/badge/YOLO-Ultralytics-blueviolet?style=flat-square" alt="YOLO Ultralytics">
-  <img src="https://img.shields.io/badge/CUDA-11.8_%7C_12.1-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="CUDA 11.8 / 12.1">
+  <img src="https://img.shields.io/badge/CUDA-11.8_%7C_12.1_%7C_12.8-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="CUDA 11.8 / 12.1 / 12.8">
   <img src="https://img.shields.io/badge/OS-Windows_10%2F11_%7C_Ubuntu_18%2F20%2F22%2F24-0078D6?style=flat-square&logo=windows&logoColor=white" alt="Windows & Ubuntu">
 </p>
 
@@ -34,7 +34,7 @@ conda activate yolo
 
 ### 2. 安装 PyTorch 与 CUDA 支持
 
-根据显卡驱动版本选择对应的 PyTorch 安装指令：
+根据显卡驱动 / GPU 架构选择对应的 PyTorch 安装指令：
 
 ```bash
 # A. CUDA 11.8 推荐指令 (Windows / Linux 通用)
@@ -43,14 +43,29 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 # B. CUDA 12.1 推荐指令 (Windows / Linux 通用)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-# C. 若仅使用 CPU 运行（无 NVIDIA 显卡）：
+# C. RTX 50 系列（如 RTX 5090，Blackwell / sm_120）必须使用 CUDA 12.8 构建
+#    若仍安装 cu118 / cu121，训练时会报错：
+#    CUDA error: no kernel image is available for execution on the device
+pip install --upgrade \
+  torch torchvision torchaudio \
+  --index-url https://download.pytorch.org/whl/cu128
+
+# D. 若仅使用 CPU 运行（无 NVIDIA 显卡）：
 # pip install torch torchvision torchaudio
 ```
+
+> **RTX 5090 说明**：该卡计算能力为 `sm_120`，旧版 PyTorch（如 `2.5.1+cu121`）仅支持到 `sm_90`，无法在 GPU 上执行内核。请使用上方 **C** 的 `cu128` 安装方式，并确认驱动已支持 50 系显卡。
 
 **验证 PyTorch 可用性：**
 
 ```bash
 python -c "import torch; print('PyTorch Version:', torch.__version__, '| CUDA Available:', torch.cuda.is_available())"
+```
+
+**RTX 50 系列额外验证（确认已包含 sm_120）：**
+
+```bash
+python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.get_arch_list()); x=torch.randn(64,64,device='cuda'); print('OK', (x@x.T).shape)"
 ```
 
 ### 3. 按操作系统安装依赖 (GUI 与 Ultralytics & 模型导出)
@@ -73,6 +88,25 @@ pip install onnx onnxscript onnxruntime-gpu
 
 # 4. 安装 TensorRT Engine 导出依赖 (仅需 GPU 导出 .engine 时安装)
 pip install tensorrt-cu12
+```
+
+##### Ubuntu 24.04：运行 `python app.py` 前需安装的系统库
+
+在 **Ubuntu 24.04** 上启动 GUI（`python app.py`）时，若出现 Qt / xcb / OpenGL / GLib 相关缺失库报错（例如 `Could not load the Qt platform plugin "xcb"`、`libxcb-cursor0`、`libGL` 等），请先安装下列系统依赖：
+
+```shell
+sudo apt-get update
+sudo apt-get install -y \
+  libxcb-cursor0 libxcb-util1 libxcb-xinerama0 \
+  libgl1-mesa-dri libgl1 \
+  libglib2.0-0t64 libsm6 libxext6 libxrender-dev libgomp1
+```
+
+安装完成后重新执行：
+
+```shell
+conda activate yolo
+python app.py
 ```
 
 ##### Ubuntu 18.04 旧系统特别支持
@@ -99,11 +133,13 @@ pip install "tensorrt<9.0.0" --extra-index-url https://pypi.nvidia.com
 pip install "numpy<2.0.0"
 ```
 
-> **提示 (Ubuntu)**：若启动界面时提示缺失 OpenCV 动态库，可补全依赖：
+> **提示 (Ubuntu)**：
 >
-> ```shell
-> sudo apt-get update && sudo apt-get install -y libgl1-mesa-glx libglib2.0-0
-> ```
+> - **Ubuntu 20.04 / 22.04**：若启动界面时提示缺失 OpenCV 动态库，可补全：
+>   ```shell
+>   sudo apt-get update && sudo apt-get install -y libgl1-mesa-glx libglib2.0-0
+>   ```
+> - **Ubuntu 24.04**：请优先按上文「Ubuntu 24.04：运行 `python app.py` 前需安装的系统库」一节安装完整 xcb / OpenGL / GLib 依赖（包名含 `libglib2.0-0t64` 等，与 22.04 不同）。
 
 #### 选项 B：Windows 环境安装 (Windows 10 / 11)
 
@@ -135,6 +171,9 @@ python app.py
 ```
 
 也可以通过 `python train.py --gui` 启动 GUI 界面。
+
+> **Ubuntu 24.04**：若 `python app.py` 因 Qt/xcb/OpenGL 报错无法启动，请先安装系统库（见上文「Ubuntu 24.04：运行 `python app.py` 前需安装的系统库」）。  
+> **RTX 5090**：若训练时报 `no kernel image is available for execution on the device`，请改用 `cu128` 版 PyTorch（见上文「安装 PyTorch 与 CUDA 支持」选项 C）。
 
 UI 界面采用 6 步骤单窗口引导流：
 
