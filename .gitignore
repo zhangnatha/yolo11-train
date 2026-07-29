@@ -207,7 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 *pt
-data_sets
 .idea
 runs
 
@@ -223,3 +222,4 @@ models
 model
 compare
 gui/widgets/labeling/__init__.py
+data_sets
